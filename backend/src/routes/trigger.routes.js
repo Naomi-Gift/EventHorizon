@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const triggerController = require('../controllers/trigger.controller');
+const {
+    validateBody,
+    validationSchemas,
+} = require('../middleware/validation.middleware');
 
 /**
  * @openapi
@@ -50,7 +54,11 @@ const triggerController = require('../controllers/trigger.controller');
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', triggerController.createTrigger);
+router.post(
+    '/',
+    validateBody(validationSchemas.triggerCreate),
+    triggerController.createTrigger
+);
 router.get('/', triggerController.getTriggers);
 
 /**
