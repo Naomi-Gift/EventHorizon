@@ -4,6 +4,7 @@ members = [
     "boilerplate",
     "token_vesting",
     "staking",
+    "escrow",
 ]
 
 [profile.release]
