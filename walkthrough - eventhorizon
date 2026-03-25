@@ -1,0 +1,39 @@
+# Slack Webhook Integration — Walkthrough
+
+## What was done
+
+### 1. Created [slack.service.js](EventHorizon/backend/src/services/telegram.service.js)
+Created [slack.service.js](EventHorizon/backend/src/services/telegram.service.js) utilizing a singleton-class pattern consistent with [telegram.service.js](EventHorizon/backend/src/services/telegram.service.js)
+
+**Key Methods:**
+- [buildAlertBlocks(event)](EventHorizon/backend/src/services/slack.service.js#7-86): Dynamically handles the mapping of a Soroban event object to a rich **Block Kit** payload. Handles dynamic headers, nested objects printing, and outputs a formatted context timestamp. Let's the user know the severity based on visual indicators (`ℹ️`, `⚠️`, `🚨`).
+- [sendSlackAlert(webhookUrl, message)](EventHorizon/backend/src/services/slack.service.js#87-132): The core network caller for posting JSON payloads to a webhook URL. Includes comprehensive Slack API error handling for rate limits (429), bad requests (400), permissions (403), error strings, and network anomalies.
+- [execute(trigger, event)](EventHorizon/backend/src/services/slack.service.js#133-157): Serves as the pluggable handler for the event poller. Automatically reads configurations attached to triggers. 
+
+### 2. Created Tests
+Implemented a test suite [slack.test.js](EventHorizon/backend/__tests__/slack.test.js) to validate payload creation locally without needing a `.env` configured webhook URL. 
+
+### 3. Updated Environment Configs
+Added the `SLACK_WEBHOOK_URL` placeholder var to our [.env.example](EventHorizon/.env.example) file.
+
+<br>
+
+Here is how you use the newly pluggable webhook handler in the poller:
+```javascript
+const slackService = require('./services/slack.service');
+
+// Inside poller.js...
+if (trigger.action.type === 'slack') {
+    await slackService.execute(trigger, event);
+}
+```
+
+## Setup Slack Application For This
+
+To correctly get alerts flowing to Slack for your EventHorizon backend instance:
+1. Go to **api.slack.com/apps** 
+2. Create App -> From scratch
+3. Find **Incoming Webhooks** under Features -> toggle ON
+4. Select **Add New Webhook to Workspace** -> Choose your alerting channel -> Allow
+5. Copy the generated Webhook URL
+6. Set it as your env variable or include it dynamically in your trigger configurations.
