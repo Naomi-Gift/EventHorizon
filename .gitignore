@@ -4,9 +4,6 @@ node_modules/
 dist/
 .DS_Store
 
-# Logs
-backend/logs/*.log
-
 # Frontend
 frontend/dist
 frontend/node_modules/

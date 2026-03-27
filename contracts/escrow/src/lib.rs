@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol, log};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -36,6 +36,7 @@ pub struct EscrowContract;
 impl EscrowContract {
     /// Creates a new escrow agreement.
     /// Transfers `amount` of `token` from `sender` to the contract.
+    #[allow(deprecated)]
     pub fn initiate_escrow(
         env: Env,
         sender: Address,
@@ -79,6 +80,7 @@ impl EscrowContract {
 
     /// Releases funds to the recipient.
     /// Can only be authorized by the arbitrator or both the sender and recipient.
+    #[allow(deprecated)]
     pub fn release_funds(env: Env, escrow_id: u64, caller: Address) {
         caller.require_auth();
 
@@ -112,6 +114,7 @@ impl EscrowContract {
     /// Authorized by:
     /// 1. The arbitrator (at any time).
     /// 2. The sender (if unlock_time has passed).
+    #[allow(deprecated)]
     pub fn cancel_escrow(env: Env, escrow_id: u64, caller: Address) {
         caller.require_auth();
 

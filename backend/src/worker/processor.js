@@ -15,6 +15,7 @@ const connection = new Redis({
     host: REDIS_HOST,
     port: REDIS_PORT,
     password: REDIS_PASSWORD,
+    lazyConnect: true,
     maxRetriesPerRequest: null,
 });
 

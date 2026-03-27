@@ -38,11 +38,9 @@ const router = express.Router();
  *           example: webhook
  *         actionUrl:
  *           type: string
- *           description: Destination URL for webhook/discord actions or recipient email for email actions.
- *           oneOf:
- *             - format: uri
- *             - format: email
- *           example: user@example.com
+ *           format: uri
+ *           description: Destination URL or integration endpoint for the action.
+ *           example: https://example.com/webhooks/event-horizon
  *         isActive:
  *           type: boolean
  *           default: true
@@ -80,10 +78,8 @@ const router = express.Router();
  *           example: webhook
  *         actionUrl:
  *           type: string
- *           oneOf:
- *             - format: uri
- *             - format: email
- *           example: user@example.com
+ *           format: uri
+ *           example: https://example.com/webhooks/event-horizon
  *         isActive:
  *           type: boolean
  *           default: true

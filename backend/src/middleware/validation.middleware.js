@@ -5,11 +5,7 @@ const validationSchemas = {
         contractId: Joi.string().trim().required(),
         eventName: Joi.string().trim().required(),
         actionType: Joi.string().valid('webhook', 'discord', 'email').default('webhook'),
-        actionUrl: Joi.alternatives().conditional('actionType', {
-            is: 'email',
-            then: Joi.string().trim().email().required(),
-            otherwise: Joi.string().trim().uri().required(),
-        }),
+        actionUrl: Joi.string().trim().uri().required(),
         isActive: Joi.boolean().default(true),
         lastPolledLedger: Joi.number().integer().min(0).default(0),
     }),

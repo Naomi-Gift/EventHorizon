@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol, log};
+use soroban_sdk::{contract, contractimpl, contracttype, log, token, Address, Env, Symbol};
 
 #[contracttype]
 #[derive(Clone)]
@@ -70,6 +70,7 @@ impl TokenVesting {
     /// 
     /// ### Returns
     /// The amount of tokens successfully claimed.
+    #[allow(deprecated)]
     pub fn claim(env: Env) -> i128 {
         let recipient: Address = env.storage().instance().get(&DataKey::Recipient).expect("Not initialized");
         recipient.require_auth();

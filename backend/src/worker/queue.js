@@ -10,26 +10,77 @@ const connection = new Redis({
     host: REDIS_HOST,
     port: REDIS_PORT,
     password: REDIS_PASSWORD,
+    lazyConnect: true,
     maxRetriesPerRequest: null,
 });
 
-const actionQueue = new Queue('action-queue', {
-    connection,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: 'exponential',
-            delay: 2000,
-        },
-        removeOnComplete: {
-            age: 86400, // Keep completed jobs for 24 hours
-            count: 1000,
-        },
-        removeOnFail: {
-            age: 604800, // Keep failed jobs for 7 days
-        },
+let queueInstance;
+
+function getQueue() {
+    if (!queueInstance) {
+        queueInstance = new Queue('action-queue', {
+            connection,
+            defaultJobOptions: {
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 2000,
+                },
+                removeOnComplete: {
+                    age: 86400, // Keep completed jobs for 24 hours
+                    count: 1000,
+                },
+                removeOnFail: {
+                    age: 604800, // Keep failed jobs for 7 days
+                },
+            },
+        });
+    }
+
+    return queueInstance;
+}
+
+const actionQueue = {
+    add(...args) {
+        return getQueue().add(...args);
     },
-});
+    getWaitingCount(...args) {
+        return getQueue().getWaitingCount(...args);
+    },
+    getActiveCount(...args) {
+        return getQueue().getActiveCount(...args);
+    },
+    getCompletedCount(...args) {
+        return getQueue().getCompletedCount(...args);
+    },
+    getFailedCount(...args) {
+        return getQueue().getFailedCount(...args);
+    },
+    getDelayedCount(...args) {
+        return getQueue().getDelayedCount(...args);
+    },
+    clean(...args) {
+        return getQueue().clean(...args);
+    },
+    getWaiting(...args) {
+        return getQueue().getWaiting(...args);
+    },
+    getActive(...args) {
+        return getQueue().getActive(...args);
+    },
+    getCompleted(...args) {
+        return getQueue().getCompleted(...args);
+    },
+    getFailed(...args) {
+        return getQueue().getFailed(...args);
+    },
+    getDelayed(...args) {
+        return getQueue().getDelayed(...args);
+    },
+    getJob(...args) {
+        return getQueue().getJob(...args);
+    },
+};
 
 /**
  * Add an action job to the queue

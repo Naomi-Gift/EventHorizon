@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol, log};
+use soroban_sdk::{contract, contractimpl, contracttype, log, token, Address, Env, Symbol};
 
 #[contracttype]
 #[derive(Clone, Debug)]
@@ -56,6 +56,7 @@ impl StakingContract {
     }
 
     /// Deposits tokens into the staking pool.
+    #[allow(deprecated)]
     pub fn stake(env: Env, user: Address, amount: i128) {
         user.require_auth();
         if amount <= 0 { panic!("Must stake more than zero"); }
@@ -100,10 +101,11 @@ impl StakingContract {
     }
 
     /// Withdraws all staked tokens, applying penalties if early.
+    #[allow(deprecated)]
     pub fn unstake(env: Env, user: Address) -> i128 {
         user.require_auth();
         
-        let mut stake_info: StakeInfo = env.storage().persistent()
+        let stake_info: StakeInfo = env.storage().persistent()
             .get(&DataKey::Stake(user.clone()))
             .expect("No stake found");
 
@@ -204,6 +206,7 @@ impl StakingContract {
             .expect("Division by zero")
     }
 
+    #[allow(deprecated)]
     fn distribute_rewards(env: &Env, to: &Address, amount: i128) {
         let reward_token_addr: Address = env.storage().instance().get(&DataKey::RewardToken).expect("Not init");
         let token_client = token::Client::new(env, &reward_token_addr);

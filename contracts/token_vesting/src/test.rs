@@ -14,12 +14,12 @@ fn test_linear_vesting_flow() {
     
     // Register mock token (using the employer as admin)
     // In SDK 20.0.0, we use register_stellar_asset_contract
-    let token_addr = env.register_stellar_asset_contract(employer.clone());
+    let token_addr = env.register_stellar_asset_contract_v2(employer.clone()).address();
     let token_admin = StellarAssetClient::new(&env, &token_addr);
     let token = TokenClient::new(&env, &token_addr);
 
     // Register vesting contract
-    let contract_id = env.register_contract(None, TokenVesting);
+    let contract_id = env.register(TokenVesting, ());
     let client = TokenVestingClient::new(&env, &contract_id);
 
     // Initial configuration
@@ -90,7 +90,7 @@ fn test_linear_vesting_flow() {
 #[should_panic(expected = "Contract already initialized")]
 fn test_double_initialization() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, TokenVesting);
+    let contract_id = env.register(TokenVesting, ());
     let client = TokenVestingClient::new(&env, &contract_id);
     let addr = Address::generate(&env);
 
@@ -103,9 +103,9 @@ fn test_double_initialization() {
 fn test_unauthorized_claim() {
     let env = Env::default();
     let recipient = Address::generate(&env);
-    let attacker = Address::generate(&env);
+    let _attacker = Address::generate(&env);
     
-    let contract_id = env.register_contract(None, TokenVesting);
+    let contract_id = env.register(TokenVesting, ());
     let client = TokenVestingClient::new(&env, &contract_id);
     let token_addr = Address::generate(&env);
 
@@ -120,7 +120,7 @@ fn test_unauthorized_claim() {
 fn test_get_info() {
     let env = Env::default();
     let recipient = Address::generate(&env);
-    let contract_id = env.register_contract(None, TokenVesting);
+    let contract_id = env.register(TokenVesting, ());
     let client = TokenVestingClient::new(&env, &contract_id);
     let token_addr = Address::generate(&env);
 

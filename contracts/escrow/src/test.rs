@@ -19,7 +19,7 @@ fn test_escrow_release_flow() {
     let token = TokenClient::new(&env, &token_addr);
 
     // 3. Register escrow contract
-    let contract_id = env.register_contract(None, EscrowContract);
+    let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
 
     // 4. Initial funding
@@ -53,7 +53,7 @@ fn test_escrow_refund_flow() {
     let token_admin = StellarAssetClient::new(&env, &token_addr);
     let token = TokenClient::new(&env, &token_addr);
 
-    let contract_id = env.register_contract(None, EscrowContract);
+    let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
 
     token_admin.mint(&sender, &1000);
@@ -79,7 +79,7 @@ fn test_unauthorized_release() {
     let recipient = Address::generate(&env);
     let arbitrator = Address::generate(&env);
     let token_addr = env.register_stellar_asset_contract_v2(sender.clone()).address();
-    let contract_id = env.register_contract(None, EscrowContract);
+    let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
 
     // Give funds for initiation
@@ -102,7 +102,7 @@ fn test_arbitrator_can_cancel() {
     let arbitrator = Address::generate(&env);
     let token_addr = env.register_stellar_asset_contract_v2(sender.clone()).address();
     let token_admin = StellarAssetClient::new(&env, &token_addr);
-    let contract_id = env.register_contract(None, EscrowContract);
+    let contract_id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &contract_id);
 
     token_admin.mint(&sender, &1000);

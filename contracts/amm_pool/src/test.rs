@@ -1,7 +1,10 @@
 #![cfg(test)]
 use super::*;
 use soroban_sdk::token::{Client as TokenClient, StellarAssetClient};
-use soroban_sdk::{testutils::{Address as _, Ledger}, Address, Env};
+use soroban_sdk::{
+    testutils::Address as _,
+    Address, Env,
+};
 
 #[test]
 fn test_amm_flow() {
@@ -11,19 +14,23 @@ fn test_amm_flow() {
     // 1. Setup participants
     let user = Address::generate(&env);
     let admin = Address::generate(&env);
-    
+
     // 2. Register mock tokens
-    let token_a_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
-    let token_b_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
-    
+    let token_a_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let token_b_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+
     let token_a_admin = StellarAssetClient::new(&env, &token_a_addr);
     let token_b_admin = StellarAssetClient::new(&env, &token_b_addr);
-    
+
     let token_a = TokenClient::new(&env, &token_a_addr);
     let token_b = TokenClient::new(&env, &token_b_addr);
 
     // 3. Register AMM contract
-    let contract_id = env.register_contract(None, ConstantProductAMM);
+    let contract_id = env.register(ConstantProductAMM, ());
     let client = ConstantProductAMMClient::new(&env, &contract_id);
 
     // 4. Initialize
@@ -69,9 +76,13 @@ fn test_swap_slippage() {
     env.mock_all_auths();
     let user = Address::generate(&env);
     let admin = Address::generate(&env);
-    let token_a_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
-    let token_b_addr = env.register_stellar_asset_contract_v2(admin.clone()).address();
-    let contract_id = env.register_contract(None, ConstantProductAMM);
+    let token_a_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let token_b_addr = env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
+    let contract_id = env.register(ConstantProductAMM, ());
     let client = ConstantProductAMMClient::new(&env, &contract_id);
 
     client.initialize(&token_a_addr, &token_b_addr);

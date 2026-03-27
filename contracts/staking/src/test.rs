@@ -23,7 +23,7 @@ fn test_staking_rewards_and_penalty() {
     let reward_token = TokenClient::new(&env, &reward_token_addr);
 
     // Register staking contract
-    let contract_id = env.register_contract(None, StakingContract);
+    let contract_id = env.register(StakingContract, ());
     let client = StakingContractClient::new(&env, &contract_id);
 
     // Initialization: 
@@ -80,7 +80,7 @@ fn test_autopayout_on_restake() {
     let reward_admin = StellarAssetClient::new(&env, &reward_token_addr);
     let reward_token = TokenClient::new(&env, &reward_token_addr);
 
-    let contract_id = env.register_contract(None, StakingContract);
+    let contract_id = env.register(StakingContract, ());
     let client = StakingContractClient::new(&env, &contract_id);
 
     client.initialize(&admin, &staking_token_addr, &reward_token_addr, &SCALAR, &0, &0);
@@ -108,7 +108,7 @@ fn test_autopayout_on_restake() {
 fn test_prevent_re_init() {
     let env = Env::default();
     let addr = Address::generate(&env);
-    let contract_id = env.register_contract(None, StakingContract);
+    let contract_id = env.register(StakingContract, ());
     let client = StakingContractClient::new(&env, &contract_id);
 
     client.initialize(&addr, &addr, &addr, &1, &0, &0);

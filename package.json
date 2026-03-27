@@ -20,5 +20,10 @@
     "ifttt"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.1.1"
+  }
 }

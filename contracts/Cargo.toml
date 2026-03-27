@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "airdrop",
     "boilerplate",
     "token_vesting",
     "staking",
@@ -8,7 +9,7 @@ members = [
     "amm_pool",
     "dao_governance",
     "lending_base",
-    "cross_chain_handler",
+    "subscriptions",
 ]
 
 [profile.release]
