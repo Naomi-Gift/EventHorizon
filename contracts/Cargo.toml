@@ -11,6 +11,7 @@ members = [
     "lending_base",
     "subscriptions",
     "nft_factory",
+    "multisig_wallet",
 ]
 
 [profile.release]
