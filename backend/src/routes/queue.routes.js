@@ -100,4 +100,28 @@ router.post('/clean', checkQueueAvailable, queueController?.clean);
  */
 router.post('/jobs/:jobId/retry', checkQueueAvailable, queueController?.retryJob);
 
+/**
+ * @swagger
+ * /api/queue/batches/stats:
+ *   get:
+ *     summary: Get batch processing statistics
+ *     tags: [Queue]
+ *     responses:
+ *       200:
+ *         description: Batch statistics retrieved successfully
+ */
+router.get('/batches/stats', queueController?.getBatchStats);
+
+/**
+ * @swagger
+ * /api/queue/batches/flush:
+ *   post:
+ *     summary: Flush all pending batches immediately
+ *     tags: [Queue]
+ *     responses:
+ *       200:
+ *         description: All pending batches flushed successfully
+ */
+router.post('/batches/flush', queueController?.flushBatches);
+
 module.exports = router;

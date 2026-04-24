@@ -1,6 +1,8 @@
 const { rpc, xdr } = require('@stellar/stellar-sdk');
 const Trigger = require('../models/trigger.model');
+const batchService = require('../services/batch.service');
 const logger = require('../config/logger');
+const { passesFilters } = require('../utils/filterEvaluator');
 
 const RPC_URL = process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org';
 const server = new rpc.Server(RPC_URL, {
@@ -147,29 +149,32 @@ try {
 }
 
 /**
- * Executes a trigger action with retry support using the trigger's retryConfig.
+ * Adds an event to the appropriate batch or executes immediately if batching is disabled
  */
-async function executeWithRetry(trigger, eventPayload) {
-    const maxRetries = trigger.retryConfig?.maxRetries ?? 3;
-    const retryInterval = trigger.retryConfig?.retryIntervalMs ?? 5000;
+async function processEvent(trigger, eventPayload) {
+    const { enqueueAction, enqueueBatchAction } = require('./queue');
 
-    let lastError;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Define the flush callback for batches
+    const flushCallback = async (eventPayloads, batchTrigger) => {
         try {
-            await enqueueAction(trigger, eventPayload);
-            return { success: true };
-        } catch (error) {
-            lastError = error;
-            if (attempt < maxRetries) {
-                logger.warn(`Action failed for trigger ${trigger._id} (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`, {
-                    error: error.message,
-                    actionType: trigger.actionType,
-                });
-                await sleep(retryInterval);
+            if (eventPayloads.length === 1) {
+                // Single event - use regular enqueue
+                await enqueueAction(batchTrigger, eventPayloads[0]);
+            } else {
+                // Batch - use batch enqueue
+                await enqueueBatchAction(batchTrigger, eventPayloads);
             }
+        } catch (error) {
+            logger.error('Failed to enqueue action(s)', {
+                triggerId: batchTrigger._id,
+                batchSize: eventPayloads.length,
+                error: error.message
+            });
         }
-    }
-    return { success: false, error: lastError };
+    };
+
+    // Add event to batch (or execute immediately if batching disabled)
+    batchService.addEvent(trigger, eventPayload, flushCallback);
 }
 
 // --- Core Polling Logic ---
@@ -242,18 +247,28 @@ async function pollEvents() {
                         for (const event of response.events) {
                             // Ensure the event falls within our intended window
                             if (event.ledger <= endLedger) {
+                                if (!passesFilters(event, trigger.filters)) {
+                                    logger.debug('Event filtered out by trigger filters', {
+                                        triggerId: trigger._id,
+                                        eventId: event.id,
+                                        eventLedger: event.ledger,
+                                    });
+                                    continue;
+                                }
                                 foundEvents++;
-                                const result = await executeWithRetry(trigger, event);
+                                try {
+                                    await processEvent(trigger, event);
 
-                                // Track execution stats
-                                trigger.totalExecutions = (trigger.totalExecutions || 0) + 1;
-                                if (result.success) {
+                                    // Track execution stats (events added to batch)
+                                    trigger.totalExecutions = (trigger.totalExecutions || 0) + 1;
                                     trigger.lastSuccessAt = new Date();
-                                } else {
+                                } catch (error) {
+                                    // Track execution stats (immediate failure)
+                                    trigger.totalExecutions = (trigger.totalExecutions || 0) + 1;
                                     trigger.failedExecutions = (trigger.failedExecutions || 0) + 1;
                                     failedActions++;
-                                    logger.error(`Action permanently failed for trigger ${trigger._id}`, {
-                                        error: result.error?.message,
+                                    logger.error(`Event processing failed for trigger ${trigger._id}`, {
+                                        error: error.message,
                                         actionType: trigger.actionType,
                                         eventLedger: event.ledger,
                                     });

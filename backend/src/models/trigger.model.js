@@ -1,5 +1,33 @@
 const mongoose = require('mongoose');
 
+const FILTER_OPERATORS = [
+    'eq',
+    'neq',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'contains',
+    'in',
+    'exists',
+];
+
+const filterSchema = new mongoose.Schema({
+    path: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    operator: {
+        type: String,
+        enum: FILTER_OPERATORS,
+        required: true,
+    },
+    value: {
+        type: mongoose.Schema.Types.Mixed,
+    },
+}, { _id: false });
+
 const triggerSchema = new mongoose.Schema({
     contractId: {
         type: String,
@@ -50,12 +78,38 @@ const triggerSchema = new mongoose.Schema({
             default: 5000
         }
     },
+    batchingConfig: {
+        enabled: {
+            type: Boolean,
+            default: false
+        },
+        windowMs: {
+            type: Number,
+            default: 10000, // 10 seconds
+            min: 1000,
+            max: 300000 // 5 minutes
+        },
+        maxBatchSize: {
+            type: Number,
+            default: 50,
+            min: 1,
+            max: 1000
+        },
+        continueOnError: {
+            type: Boolean,
+            default: true // Continue processing other events in batch if one fails
+        }
+    },
     metadata: {
         type: Map,
         of: String,
         index: true
+    },
+    filters: {
+        type: [filterSchema],
+        default: [],
     }
-}, { 
+}, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -76,4 +130,7 @@ triggerSchema.virtual('healthStatus').get(function() {
     return 'critical';
 });
 
-module.exports = mongoose.model('Trigger', triggerSchema);
+const Trigger = mongoose.model('Trigger', triggerSchema);
+
+module.exports = Trigger;
+module.exports.FILTER_OPERATORS = FILTER_OPERATORS;

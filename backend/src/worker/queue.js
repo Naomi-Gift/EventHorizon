@@ -155,9 +155,51 @@ async function cleanQueue() {
     }
 }
 
+/**
+ * Add a batch action job to the queue
+ * @param {Object} trigger - The trigger configuration
+ * @param {Array} eventPayloads - Array of event data
+ * @returns {Promise<Job>} The created job
+ */
+async function enqueueBatchAction(trigger, eventPayloads) {
+    try {
+        const job = await actionQueue.add(
+            `batch-${trigger.actionType}-${trigger.contractId}`,
+            {
+                trigger,
+                eventPayloads, // Array of events
+                isBatch: true,
+            },
+            {
+                priority: trigger.priority || 1,
+                jobId: `batch-${trigger._id}-${Date.now()}`,
+            }
+        );
+
+        logger.info('Batch action enqueued', {
+            jobId: job.id,
+            actionType: trigger.actionType,
+            contractId: trigger.contractId,
+            eventName: trigger.eventName,
+            batchSize: eventPayloads.length,
+        });
+
+        return job;
+    } catch (error) {
+        logger.error('Failed to enqueue batch action', {
+            actionType: trigger.actionType,
+            contractId: trigger.contractId,
+            batchSize: eventPayloads.length,
+            error: error.message,
+        });
+        throw error;
+    }
+}
+
 module.exports = {
     actionQueue,
     enqueueAction,
+    enqueueBatchAction,
     getQueueStats,
     cleanQueue,
 };

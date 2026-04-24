@@ -1,4 +1,5 @@
 const { getQueueStats, cleanQueue, actionQueue } = require('../worker/queue');
+const batchService = require('../services/batch.service');
 const logger = require('../config/logger');
 
 /**
@@ -95,6 +96,44 @@ async function clean(req, res) {
         res.status(500).json({
             success: false,
             error: 'Failed to clean queue',
+        });
+    }
+}
+
+/**
+ * Get batch statistics
+ */
+async function getBatchStats(req, res) {
+    try {
+        const stats = batchService.getStats();
+        res.json({
+            success: true,
+            data: stats,
+        });
+    } catch (error) {
+        logger.error('Failed to get batch stats', { error: error.message });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve batch statistics',
+        });
+    }
+}
+
+/**
+ * Flush all pending batches
+ */
+async function flushBatches(req, res) {
+    try {
+        batchService.flushAll();
+        res.json({
+            success: true,
+            message: 'All pending batches flushed successfully',
+        });
+    } catch (error) {
+        logger.error('Failed to flush batches', { error: error.message });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to flush batches',
         });
     }
 }

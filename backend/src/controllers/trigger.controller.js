@@ -69,3 +69,38 @@ exports.deleteTrigger = asyncHandler(async (req, res) => {
 
     res.status(204).send();
 });
+
+exports.updateTrigger = asyncHandler(async (req, res) => {
+    logger.info('Updating trigger', {
+        triggerId: req.params.id,
+        ip: req.ip,
+    });
+
+    const trigger = await Trigger.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true, runValidators: true }
+    );
+
+    if (!trigger) {
+        logger.warn('Trigger not found for update', {
+            triggerId: req.params.id,
+            ip: req.ip,
+        });
+
+        throw new AppError('Trigger not found', 404);
+    }
+
+    logger.info('Trigger updated successfully', {
+        triggerId: req.params.id,
+        contractId: trigger.contractId,
+        eventName: trigger.eventName,
+        batchingEnabled: trigger.batchingConfig?.enabled,
+        ip: req.ip,
+    });
+
+    res.json({
+        success: true,
+        data: trigger,
+    });
+});

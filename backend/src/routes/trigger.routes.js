@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const triggerController = require('../controllers/trigger.controller');
+const auditMiddleware = require('../middleware/audit.middleware');
 const {
     validateBody,
     validationSchemas,
@@ -56,6 +57,7 @@ const {
  */
 router.post(
     '/',
+    auditMiddleware.auditCreate(),
     validateBody(validationSchemas.triggerCreate),
     triggerController.createTrigger
 );
@@ -86,6 +88,55 @@ router.get('/', triggerController.getTriggers);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete('/:id', triggerController.deleteTrigger);
+router.delete('/:id',
+    auditMiddleware.auditDelete(),
+    triggerController.deleteTrigger
+);
+
+/**
+ * @openapi
+ * /api/triggers/{id}:
+ *   put:
+ *     summary: Update a trigger
+ *     description: Update an existing trigger configuration including batching settings.
+ *     tags:
+ *       - Triggers
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Trigger identifier.
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TriggerInput'
+ *     responses:
+ *       200:
+ *         description: Trigger updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Trigger'
+ *       404:
+ *         description: Trigger not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: Invalid trigger payload.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.put('/:id',
+    auditMiddleware.auditUpdate(),
+    triggerController.updateTrigger
+);
 
 module.exports = router;
