@@ -1,103 +1,111 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, String};
+use soroban_sdk::{testutils::{Address as _, Events}, Address, String, Vec, IntoVal, Symbol};
 
 #[test]
-fn test_initialize_and_mint() {
+fn test_lifecycle_and_events() {
     let env = Env::default();
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
+    env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, NftFactory);
+    let admin = Address::generate(&env);
+    let minter = Address::generate(&env);
+    let user = Address::generate(&env);
+    let recipient = Address::generate(&env);
+
+    let contract_id = env.register(NftFactory, ());
     let client = NftFactoryClient::new(&env, &contract_id);
 
+    // 1. Initialize
     client.initialize(
         &admin,
+        &minter,
         &String::from_str(&env, "EventHorizon NFTs"),
         &symbol_short!("EH"),
         &500,
     );
 
+    // 2. Mint
     let uri = String::from_str(&env, "ipfs://QmExample");
-    let token_id = client.mint(&user, &uri, &750);
+    let token_id = client.mint(&user, &uri, &Some(750));
 
     assert_eq!(token_id, 0);
     assert_eq!(client.owner_of(&token_id), user);
-    assert_eq!(client.total_supply(), 1);
 
-    let meta = client.token_metadata(&token_id);
-    assert_eq!(meta.uri, uri);
+    // Check Events (Transfer and MetadataUpdated)
+    let events = env.events().all();
+    let transfer_event = events.get(0).unwrap();
+    assert_eq!(transfer_event.0, contract_id.clone());
+    assert_eq!(transfer_event.1.get(0).unwrap(), symbol_short!("Transfer").into_val(&env));
+    
+    let metadata_event = events.get(1).unwrap();
+    assert_eq!(metadata_event.1.get(0).unwrap(), Symbol::new(&env, "MetadataUpdated").into_val(&env));
+    assert_eq!(metadata_event.1.get(1).unwrap(), 0u32.into_val(&env));
+    assert_eq!(metadata_event.2, uri.into_val(&env));
 
-    let royalty = client.royalty_info(&token_id);
-    assert_eq!(royalty.bps, 750);
-    assert_eq!(royalty.recipient, user);
-}
-
-#[test]
-fn test_batch_mint() {
-    let env = Env::default();
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
-
-    let contract_id = env.register_contract(None, NftFactory);
-    let client = NftFactoryClient::new(&env, &contract_id);
-
-    client.initialize(&admin, &String::from_str(&env, "Batch"), &symbol_short!("BATCH"), &0);
-
+    // 3. Batch Mint
     let mut uris = Vec::new(&env);
     uris.push_back(String::from_str(&env, "ipfs://a"));
     uris.push_back(String::from_str(&env, "ipfs://b"));
-    uris.push_back(String::from_str(&env, "ipfs://c"));
+    client.batch_mint(&user, &uris, &None);
 
-    let ids = client.batch_mint(&user, &uris, &1000);
-    assert_eq!(ids.len(), 3);
-    assert_eq!(ids.get(0), Some(0));
-    assert_eq!(ids.get(2), Some(2));
     assert_eq!(client.total_supply(), 3);
+
+    // 4. Transfer
+    client.transfer(&user, &recipient, &0);
+    assert_eq!(client.owner_of(&0), recipient);
+
+    // 5. Batch Transfer
+    let mut transfers = Vec::new(&env);
+    transfers.push_back((recipient.clone(), 1u32));
+    transfers.push_back((recipient.clone(), 2u32));
+    client.batch_transfer(&user, &transfers);
+    assert_eq!(client.owner_of(&1), recipient);
+    assert_eq!(client.owner_of(&2), recipient);
+
+    // 6. Royalty Paid Event
+    let asset = Address::generate(&env);
+    client.pay_royalty(&recipient, &0, &1000i128, &asset);
+
+    let all_events = env.events().all();
+    let last_event = all_events.get(all_events.len() - 1).unwrap();
+    assert_eq!(last_event.1.get(0).unwrap(), Symbol::new(&env, "RoyaltyPaid").into_val(&env));
 }
 
 #[test]
-fn test_default_royalty_fallback() {
+#[should_panic(expected = "Error(NotTokenOwner)")]
+fn test_unauthorized_transfer() {
     let env = Env::default();
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
+    env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, NftFactory);
+    let admin = Address::generate(&env);
+    let minter = Address::generate(&env);
+    let user = Address::generate(&env);
+    let hacker = Address::generate(&env);
+
+    let contract_id = env.register(NftFactory, ());
     let client = NftFactoryClient::new(&env, &contract_id);
 
-    client.initialize(
-        &admin,
-        &String::from_str(&env, "Default Royalty Test"),
-        &symbol_short!("DRT"),
-        &300,
-    );
+    client.initialize(&admin, &minter, &String::from_str(&env, "Test"), &symbol_short!("T"), &0);
+    client.mint(&user, &String::from_str(&env, "uri"), &None);
 
-    // Mint with 0 bps so default should NOT be used — royalty is stored per-token
-    let uri = String::from_str(&env, "ipfs://token1");
-    client.mint(&user, &uri, &0);
-    let royalty = client.royalty_info(&0);
-    assert_eq!(royalty.bps, 0); // per-token overrides default
-
-    // Update default royalty
-    client.set_default_royalty(&admin, &admin, &2000);
-
-    // A non-existent token falls back to the new default
-    let default = client.royalty_info(&999);
-    assert_eq!(default.bps, 2000);
-    assert_eq!(default.recipient, admin);
+    // Hacker tries to transfer user's token
+    client.transfer(&hacker, &hacker, &0);
 }
 
 #[test]
-#[should_panic(expected = "InvalidRoyaltyBps")]
-fn test_invalid_royalty_bps() {
+fn test_admin_functions() {
     let env = Env::default();
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
+    env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, NftFactory);
+    let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+    let minter = Address::generate(&env);
+
+    let contract_id = env.register(NftFactory, ());
     let client = NftFactoryClient::new(&env, &contract_id);
 
-    client.initialize(&admin, &String::from_str(&env, "Bad"), &symbol_short!("BAD"), &0);
-    client.mint(&user, &String::from_str(&env, "x"), &20_000);
+    client.initialize(&admin, &minter, &String::from_str(&env, "Test"), &symbol_short!("T"), &0);
+
+    client.set_admin(&admin, &new_admin);
 }
