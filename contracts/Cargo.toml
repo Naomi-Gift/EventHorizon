@@ -14,6 +14,7 @@ members = [
     "multisig_wallet",
     "yield_vault",
     "prediction_market",
+    "event_proxy",
 ]
 
 [profile.release]
