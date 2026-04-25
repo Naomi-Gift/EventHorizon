@@ -53,6 +53,10 @@ const triggerSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    webhookSecret: {
+        type: String,
+        default: () => require('crypto').randomBytes(32).toString('hex')
+    },
     isActive: {
         type: Boolean,
         default: true

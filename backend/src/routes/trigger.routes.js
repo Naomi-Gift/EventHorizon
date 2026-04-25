@@ -139,4 +139,60 @@ router.put('/:id',
     triggerController.updateTrigger
 );
 
+/**
+ * @openapi
+ * /api/triggers/{id}/regenerate-secret:
+ *   post:
+ *     summary: Regenerate webhook secret
+ *     description: Generate a new webhook secret for HMAC signature verification. Only available for webhook triggers.
+ *     tags:
+ *       - Triggers
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Trigger identifier.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Webhook secret regenerated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Webhook secret regenerated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     triggerId:
+ *                       type: string
+ *                       example: "507f1f77bcf86cd799439011"
+ *                     webhookSecret:
+ *                       type: string
+ *                       example: "a1b2c3d4e5f678901234567890123456789012345678901234567890123456789012"
+ *       404:
+ *         description: Trigger not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       400:
+ *         description: Not a webhook trigger.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/:id/regenerate-secret',
+    auditMiddleware.auditUpdate(),
+    triggerController.regenerateWebhookSecret
+);
+
 module.exports = router;

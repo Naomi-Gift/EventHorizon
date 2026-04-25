@@ -4,6 +4,7 @@ const axios = require('axios');
 const { sendEventNotification } = require('../services/email.service');
 const { sendDiscordNotification } = require('../services/discord.service');
 const telegramService = require('../services/telegram.service');
+const webhookService = require('../services/webhook.service');
 const logger = require('../config/logger');
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -101,11 +102,17 @@ async function executeSingleAction(trigger, eventPayload) {
                 throw new Error('Missing actionUrl for webhook trigger');
             }
 
-            return await axios.post(actionUrl, {
+            const payload = {
                 contractId,
                 eventName,
                 payload: eventPayload,
-            });
+            };
+
+            return await webhookService.sendSignedWebhook(
+                actionUrl,
+                payload,
+                trigger.webhookSecret
+            );
         }
 
         default:
@@ -192,14 +199,20 @@ async function executeBatchAction(trigger, eventPayloads) {
                         throw new Error('Missing actionUrl for webhook trigger');
                     }
 
-                    await axios.post(actionUrl, {
+                    const payload = {
                         contractId,
                         eventName,
                         payload: eventPayload,
                         batchIndex: i,
                         batchSize: eventPayloads.length,
                         batchPayloads: eventPayloads, // Send the full batch for webhooks
-                    });
+                    };
+
+                    await webhookService.sendSignedWebhook(
+                        actionUrl,
+                        payload,
+                        trigger.webhookSecret
+                    );
                     break;
                 }
 
